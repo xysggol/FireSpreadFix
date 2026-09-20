@@ -1,0 +1,14 @@
+{
+  "$schema": "https://gitee.com/SC-SPM/SurvivalcraftApi/raw/SCAPI1.9/Survivalcraft/Content/modinfo-scheme.json",
+  "Name": "火焰蔓延修复 Fire Spread Fix",
+  "Version": "1.0.0",
+  "ApiVersion": "1.9.3.1",
+  "Description": "修复原版火焰蔓延 Bug：当两个可燃方块之间隔着不可燃方块时，火焰有概率直接穿过阻挡点燃另一侧的可燃方块。本模组为火焰蔓延加入视线遮挡检测——只有当火焰与目标可燃方块之间存在一条不被实心方块阻挡的连通路径时，才会点燃目标，从而彻底杜绝「隔墙传火」。斜角/拐角处的阻挡同样会被检查。 | Fixes a vanilla fire-spread bug: fire could probabilistically jump through a non-flammable block and ignite a flammable block on the other side. This mod adds line-of-sight occlusion checking to fire expansion, so a block is only ignited when an unobstructed path exists between the fire and the target, including diagonal/corner cases.",
+  "ScVersion": "2.4.0.0",
+  "LoadOrder": 10000,
+  "NonPersistentMod": true,
+  "GameplayImpactLevel": "Assist",
+  "Author": "anonymous",
+  "PackageName": "FireSpreadFix",
+  "Dependencies": {}
+}

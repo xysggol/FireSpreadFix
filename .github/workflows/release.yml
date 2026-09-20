@@ -1,0 +1,48 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Build
+        run: dotnet build FireSpreadFix_API193.csproj -c Release
+
+      - name: Prepare assets
+        run: |
+          cd bin/Release
+          sha256sum FireSpreadFix_API193.scmod > FireSpreadFix_API193.scmod.sha256
+          ls -la
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          ASSET="bin/Release/FireSpreadFix_API193.scmod"
+          ASSET_SHA="bin/Release/FireSpreadFix_API193.scmod.sha256"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$ASSET" "$ASSET_SHA" --clobber
+          else
+            gh release create "$TAG" --verify-tag \
+              --title "火焰蔓延修复 $TAG" \
+              --generate-notes \
+              "$ASSET" "$ASSET_SHA"
+          fi
