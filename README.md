@@ -1,65 +1,58 @@
-# Fire Spread Fix 火焰蔓延修复
+# Fire Spread Fix
 
 A bug-fix mod for [Survivalcraft API](https://gitee.com/SC-SPM/SurvivalcraftApi) 1.9.x.
 
-一个针对 [Survivalcraft API](https://gitee.com/SC-SPM/SurvivalcraftApi) 1.9.x 的 Bug 修复模组。
+[中文说明 / Chinese](README.zh-CN.md)
 
 ---
 
-## The problem this mod solves / 本模组解决的问题
+## The problem this mod solves
 
-In vanilla (including the plugin/API edition), two flammable blocks separated by a non-flammable block can still ignite each other: when one is on fire, the other has a chance to catch fire **through the blocker** (see the screenshot: two wooden planks on both sides of a brick pillar).
+In vanilla (including the plugin/API edition), fire ignores non-flammable blocks when it spreads. If a flammable block is burning, another flammable block up to ~2.5 blocks away has a chance to catch fire **even when a solid, non-flammable block sits directly between them**:
 
-在原版（包括插件版）中，两个可燃方块之间即使隔着不可燃方块，也会互相点燃：一侧燃烧时，另一侧有概率**穿过阻挡**被点燃（见截图：砖柱两侧的木板）。
+> two wooden planks on both sides of a brick pillar can ignite each other.
 
-Root cause: `SubsystemFireBlockBehavior.Update` takes far expansion offsets (up to ~2.5 blocks, e.g. `(±2, 0, 0)`) from `m_expansionProbabilities` and calls `SetCellOnFire` on the target block **without any line-of-sight check**, so fire can reach a flammable block directly behind a wall.
+This applies to any flammable block, not just planks.
 
-根因：`SubsystemFireBlockBehavior.Update` 通过 `m_expansionProbabilities` 取到最远约 2.5 格的蔓延偏移（例如 `(±2,0,0)`），随后直接对目标方块调用 `SetCellOnFire`，**完全没有阻挡/视线检测**，因此火焰可以点燃墙正后方的可燃方块。
+## Root cause
 
-## How it works / 实现原理
+`SubsystemFireBlockBehavior.Update` builds fire-expansion targets from `m_expansionProbabilities`. That table contains offsets of up to ~2.5 blocks (for example `(±2, 0, 0)`, `(0, 2, 0)`), and the result is passed to `SetCellOnFire`.
 
-Via HarmonyX, this mod replaces `SubsystemFireBlockBehavior.Update` (Prefix that skips the original). It keeps the vanilla fire behaviour (timers, burn-away, particles, sound) but adds one check to each probabilistic expansion attempt:
+`SetCellOnFire` only checks whether the target block is flammable. It never checks whether the path between the fire and the target is obstructed, so fire can "tunnel" straight through a wall.
 
-本模组通过 HarmonyX 接管 `SubsystemFireBlockBehavior.Update`（Prefix 返回 `false` 跳过原版）。它保留原版火焰行为（计时、燃尽、粒子、音效），只对每次概率蔓延加一道判定：
+## How it works
 
-- The fire must have an **unobstructed path** to the target flammable block: a chain of passable cells (air / fire / block 61) whose step count does not exceed the rounded Euclidean distance between the two cells.
-- 火焰到目标可燃方块之间必须存在一条**不被实心方块阻挡的连通路径**：路径由可通行格（空气 / 火焰 / 方块 61）组成，步数不超过两者欧氏距离向上取整。
+Via HarmonyX, this mod replaces `SubsystemFireBlockBehavior.Update` with a prefix that skips the original. The vanilla behaviour is kept (timers, burn-away, particles, sound), and one extra check is added to every probabilistic far-expansion attempt:
 
-Consequences:
+- There must be an **unobstructed path** from the fire cell to the target flammable block: a chain of passable cells (air / fire / block 61) whose step count does not exceed the rounded-up Euclidean distance between the two cells.
 
-- Fire no longer jumps straight through a 1-block-thick wall (the reported bug).
-- Sealed diagonal corners are blocked too (both orthogonal neighbours solid).
-- Legitimate spread is preserved: adjacent blocks, open-air gaps, diagonals with an opening, and going over the top of a wall.
+Resulting behaviour:
 
-效果：
+| Situation | Vanilla | With this mod |
+| --- | --- | --- |
+| Flammable block directly behind a 1-block-thick wall | may ignite | does not ignite |
+| Sealed diagonal corner (both orthogonal neighbours solid) | may ignite | does not ignite |
+| Adjacent flammable block | ignites | ignites |
+| Open-air gap / diagonal with an opening / path over the top of a wall | ignites | ignites |
 
-- 火焰不再隔着一格厚的墙直接跳燃（即所报 Bug）。
-- 斜角被完全封死时同样不会穿墙。
-- 合法蔓延保留：紧邻方块、隔空、有开口的斜向、以及从墙顶绕过。
+Only the obstruction rule is added. The ignition radius, probabilities and timers are unchanged, so normal fire spread still looks and feels vanilla.
 
-## Compatibility / 兼容性
+## Compatibility & limitations
 
 - Built and tested against [Survivalcraft API 1.9.3.1](https://gitee.com/SC-SPM/SurvivalcraftApi/releases/tag/API_1.9.3.1).
-- Windows / Linux / Android share a single `.scmod`. No saved data, `NonPersistentMod` is `true` (safe to remove at any time).
+- Covers every ignition source that goes through the fire subsystem: fire blocks, matches, explosions, incendiary projectiles, magma, etc.
+- Adds no blocks, items or entities and stores nothing in the save. `NonPersistentMod` is `true`, so it can be removed at any time without warnings.
+- Windows / Linux / Android share a single `.scmod`.
 
-- 基于 [Survivalcraft API 1.9.3.1](https://gitee.com/SC-SPM/SurvivalcraftApi/releases/tag/API_1.9.3.1) 构建与测试。
-- Windows / Linux / Android 共用一个 `.scmod`。不写入存档（`NonPersistentMod=true`），可随时移除。
-
-## Installation / 安装
+## Installation
 
 1. Download `FireSpreadFix_API193.scmod` from Releases.
 2. **PC (Windows / Linux)**: put the `.scmod` into the game's `Mods/` folder.
 3. **Android**: push it to `/storage/emulated/0/Survivalcraft2.4_API1.9/Mods`, or simply open the file on the device to install it.
 
-1. 从 Releases 下载 `FireSpreadFix_API193.scmod`。
-2. **PC（Windows / Linux）**：把 `.scmod` 放进游戏的 `Mods/` 目录。
-3. **Android**：用 `adb push` 放到 `/storage/emulated/0/Survivalcraft2.4_API1.9/Mods`，或在设备上直接打开该文件安装。
+## Build from source
 
-## Build from source / 从源码构建
-
-Requires the .NET 10 SDK. Needs `nuget.config` in the project folder to restore `SurvivalcraftAPI.Survivalcraft`.
-
-需要 .NET 10 SDK。`nuget.config` 须与项目同目录，用于还原 `SurvivalcraftAPI.Survivalcraft`。
+Requires the .NET 10 SDK. The project needs the bundled `nuget.config` to restore `SurvivalcraftAPI.Survivalcraft`.
 
 ```bash
 dotnet build FireSpreadFix_API193.csproj -c Release
@@ -67,10 +60,15 @@ dotnet build FireSpreadFix_API193.csproj -c Release
 
 On success, `FireSpreadFix_API193.scmod` is generated in `bin/Release/`.
 
-构建成功后，`FireSpreadFix_API193.scmod` 生成于 `bin/Release/`。
+## Releasing (maintainers)
 
-## License / 许可
+Pushing a tag matching `v*` triggers the workflow in `.github/workflows/release.yml`. It builds the `.scmod` on GitHub's runners and attaches it (plus a `.sha256` checksum) to the GitHub release, so nothing has to be uploaded from your machine:
 
-LGPL-3.0 (`LICENSE`), with the GPL-3.0 full text in `LICENSE.GPL-3.0`.
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
 
-LGPL-3.0（见 `LICENSE`），GPL-3.0 全文见 `LICENSE.GPL-3.0`。
+## License
+
+Released under the **GNU Lesser General Public License v3.0 (LGPL-3.0)**. See [LICENSE](LICENSE). LGPL-3.0 incorporates the terms of the GNU GPL v3.0, whose full text is in [LICENSE.GPL-3.0](LICENSE.GPL-3.0).
