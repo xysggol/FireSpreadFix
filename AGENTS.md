@@ -99,8 +99,10 @@
 - **中英双语文档必须拆成两个文件，禁止混写在一个文件里**：
   - `README.md`：纯英文；
   - `README.zh-CN.md`：纯中文。
-- 两个文件互相在标题下方给出跳转链接：英文版写 `[中文说明 / Chinese](README.zh-CN.md)`，中文版写 `[English](README.md)`。
+- `README.md` 必须**零中文字符、零中文标点**（包括 `。，、：；！？（）「」` 等全角符号）。语言切换链接写 `[Chinese](README.zh-CN.md)`，**不要**写 `[中文说明 / Chinese]` 这类混入中文的写法。英文正文里的非 ASCII 符号（如 `±`）也一律替换为 ASCII（如 `+/-`）。
+- `README.zh-CN.md` 用中文撰写，语言切换链接写 `[English](README.md)`；除代码、术语、链接外不要整段照搬英文。
 - 两个文件内容需保持同步；改动其一时同时更新另一个。
+- 提交前自检（应无输出）：`git grep -nP "[\x{4e00}-\x{9fff}\x{3000}-\x{303f}\x{ff00}-\x{ffef}]" -- README.md`。
 - 每个 README 首次出现「Survivalcraft API」（中文版为「生存战争插件版」）时必须超链接到仓库地址 `https://gitee.com/SC-SPM/SurvivalcraftApi`，避免歧义；提到版本时可另链到对应 release tag。
 - 新增同类模组仓库时沿用 `.github/workflows/release.yml` 的 tag 发布方式。
 

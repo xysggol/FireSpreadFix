@@ -2,7 +2,7 @@
 
 A bug-fix mod for [Survivalcraft API](https://gitee.com/SC-SPM/SurvivalcraftApi) 1.9.x.
 
-[中文说明 / Chinese](README.zh-CN.md)
+[Chinese](README.zh-CN.md)
 
 ---
 
@@ -16,7 +16,7 @@ This applies to any flammable block, not just planks.
 
 ## Root cause
 
-`SubsystemFireBlockBehavior.Update` builds fire-expansion targets from `m_expansionProbabilities`. That table contains offsets of up to ~2.5 blocks (for example `(±2, 0, 0)`, `(0, 2, 0)`), and the result is passed to `SetCellOnFire`.
+`SubsystemFireBlockBehavior.Update` builds fire-expansion targets from `m_expansionProbabilities`. That table contains offsets of up to ~2.5 blocks (for example `(+/-2, 0, 0)`, `(0, 2, 0)`), and the result is passed to `SetCellOnFire`.
 
 `SetCellOnFire` only checks whether the target block is flammable. It never checks whether the path between the fire and the target is obstructed, so fire can "tunnel" straight through a wall.
 
